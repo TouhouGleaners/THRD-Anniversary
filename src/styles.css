@@ -1,0 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&family=Noto+Serif:ital,wght@0,400;0,500;1,400&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Noto Serif", serif;
+  --font-sans: "Manrope", sans-serif;
+
+  --color-parchment: #fcf9ef;
+  --color-tea-green: #061b0e;
+  --color-amber: #825516;
+  --color-charcoal: #434843;
+  --color-mist: rgba(252, 249, 239, 0.8);
+
+  --shadow-ambient: 0 12px 40px rgba(6, 27, 14, 0.04);
+}
+
+@layer base {
+  body {
+    @apply bg-parchment text-tea-green font-sans antialiased;
+  }
+}
+
+.glass {
+  @apply bg-white/40 backdrop-blur-xl border border-white/20 shadow-ambient;
+}
+
+.glass-dark {
+  @apply bg-tea-green/90 backdrop-blur-xl border border-white/10 text-parchment;
+}
+
+/* Custom scrollbar to match the aesthetic */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #c3c8c1;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #aab0a7;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
