@@ -4,6 +4,7 @@ import { Grid, Sparkles, X } from 'lucide-vue-next';
 import AnniversaryGrid from './components/AnniversaryGrid.vue';
 import OrbitView from './components/OrbitView.vue';
 import MemberCard from './components/MemberCard.vue';
+import DreamParticles from './components/DreamParticles.vue';
 import type { Member } from './types';
 
 type ViewMode = 'orbit' | 'grid';
@@ -42,6 +43,7 @@ const setMode = (mode: ViewMode) => {
 
 <template>
   <div class="min-h-screen flex flex-col font-sans selection:bg-amber/20 selection:text-amber">
+    <DreamParticles />
     <!-- Navigation Header -->
     <header class="fixed top-0 w-full z-50 glass border-b border-tea-green/5 transition-all duration-700">
       <div class="max-w-7xl mx-auto px-8 h-16 flex items-center justify-between">
