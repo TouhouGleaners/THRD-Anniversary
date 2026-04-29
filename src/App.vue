@@ -79,7 +79,7 @@ const setMode = (mode: ViewMode) => {
       </div>
       <Transition v-else name="fade" mode="out-in">
         <OrbitView v-if="viewMode === 'orbit'" :onEnter="handleEnterDream" :members="members" @select="selectedMember = $event" class="w-full" />
-        <AnniversaryGrid v-else :members="members" class="w-full" />
+        <AnniversaryGrid v-else :members="members" @select="selectedMember = $event" class="w-full" />
       </Transition>
 
       <!-- Liquid Glass Modal for Selected Dreamer -->

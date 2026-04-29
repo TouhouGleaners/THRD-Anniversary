@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import type { Member } from '../types';
-import MemberCard from './MemberCard.vue';
 
 defineProps<{
   members: Member[];
 }>();
+
+const emit = defineEmits<{
+  (e: 'select', member: Member): void;
+}>();
 </script>
 
 <template>
-  <div class="max-w-400 mx-auto w-full px-6 py-12 md:py-20 lg:py-24">
-    <header class="flex flex-col items-center mb-16 text-center w-full max-w-4xl mx-auto">
+  <div class="max-w-4xl mx-auto w-full px-6 py-12 md:py-20 lg:py-24">
+    <header class="flex flex-col items-center mb-20 text-center w-full mx-auto">
       <h2
         v-motion
         :initial="{ opacity: 0, y: -10 }"
@@ -29,13 +32,49 @@ defineProps<{
       </h1>
     </header>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      <MemberCard
+    <!-- 展墙列表 -->
+    <div class="flex flex-col">
+      <div
         v-for="(member, index) in members"
         :key="member.id"
-        :member="member"
-        :delay="0.1 * (index % 4)"
-      />
+        v-motion
+        :initial="{ opacity: 0, y: 16 }"
+        :enter="{ opacity: 1, y: 0, transition: { duration: 500, delay: index * 60 } }"
+        @click="emit('select', member)"
+        class="group flex items-start gap-5 py-6 md:py-7 border-b border-tea-green/10 last:border-b-0 cursor-pointer transition-colors duration-300 hover:bg-white/40 rounded-xl px-4 -mx-4"
+      >
+        <!-- 头像 -->
+        <div class="w-11 h-11 rounded-full overflow-hidden shrink-0 border border-white/50 shadow-sm grayscale-20 group-hover:grayscale-0 transition-all duration-500">
+          <img
+            :src="member.avatar"
+            :alt="member.name"
+            :style="{ objectPosition: member.imagePosition || 'center' }"
+            class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+            referrerpolicy="no-referrer"
+          />
+        </div>
+
+        <!-- 内容 -->
+        <div class="flex flex-col md:flex-row md:items-center gap-1 md:gap-6 grow min-w-0">
+          <!-- 称号 + 昵称 -->
+          <div class="flex flex-col gap-0.5 shrink-0 md:w-44">
+            <span
+              v-if="member.title"
+              class="text-[9px] uppercase font-bold tracking-[0.25em] text-charcoal/35"
+            >
+              {{ member.title }}
+            </span>
+            <h3 class="font-serif text-base md:text-lg text-tea-green group-hover:text-amber transition-colors duration-300 tracking-tight">
+              {{ member.name }}
+            </h3>
+          </div>
+
+          <!-- 引言 -->
+          <p class="font-serif italic text-[13px] text-charcoal/50 leading-relaxed tracking-wide group-hover:text-charcoal/70 transition-colors duration-300 grow">
+            "{{ member.quote }}"
+          </p>
+        </div>
+      </div>
     </div>
   </div>
 </template>
