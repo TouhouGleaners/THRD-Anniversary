@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { Grid, Sparkles, X } from 'lucide-vue-next';
-import AnniversaryGrid from './components/AnniversaryGrid.vue';
-import OrbitView from './components/OrbitView.vue';
+import { X } from 'lucide-vue-next';
+import OrbitView from './editions/1st/OrbitView.vue';
 import MemberCard from './components/MemberCard.vue';
 import DreamParticles from './components/DreamParticles.vue';
 import type { Member } from './types';
+import GridView from './editions/1st/GridView.vue';
 
 type ViewMode = 'orbit' | 'grid';
 
@@ -16,7 +16,7 @@ const isLoading = ref(true);
 
 onMounted(async () => {
   try {
-    const res = await fetch(`/1/members.json`);
+    const res = await fetch(`/editions/1st/members.json`);
     if (res.ok) {
       members.value = await res.json();
     } else {
@@ -79,7 +79,7 @@ const setMode = (mode: ViewMode) => {
       </div>
       <Transition v-else name="fade" mode="out-in">
         <OrbitView v-if="viewMode === 'orbit'" :onEnter="handleEnterDream" :members="members" @select="selectedMember = $event" class="w-full" />
-        <AnniversaryGrid v-else :members="members" @select="selectedMember = $event" class="w-full" />
+        <GridView v-else :members="members" @select="selectedMember = $event" class="w-full" />
       </Transition>
 
       <!-- Liquid Glass Modal for Selected Dreamer -->
