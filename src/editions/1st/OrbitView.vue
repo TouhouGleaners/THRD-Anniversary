@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
-import type { Member } from '../types';
+import type { Member } from '../../types';
 import OrbitingCard from './OrbitingCard.vue';
 
 const props = defineProps<{
