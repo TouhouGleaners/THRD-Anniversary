@@ -38,6 +38,7 @@ const props = defineProps<{
     <div class="relative z-10 flex flex-col gap-3 grow">
       <div class="flex flex-col items-start gap-1">
         <span
+          v-if="member.title"
           class="text-[9px] uppercase font-bold tracking-[0.25em] px-3 py-1 rounded-full border shadow-sm transition-colors duration-500 bg-white/50 text-tea-green border-tea-green/20"
         >
           {{ member.title }}
