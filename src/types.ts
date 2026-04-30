@@ -5,4 +5,5 @@ export interface Member {
   quote: string;
   avatar: string;
   imagePosition?: string;
+  joinedAt: string;  // 2026-04-30
 }

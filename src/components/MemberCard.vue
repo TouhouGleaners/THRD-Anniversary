@@ -1,11 +1,19 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { Member } from '../types';
 
 const props = defineProps<{
   member: Member;
-  className?: string; // We'll just bind this down
+  className?: string;
   delay?: number;
 }>();
+
+const companionDays = computed(() => {
+  if (!props.member.joinedAt) return null;
+  const joined = new Date(props.member.joinedAt).getTime();
+  const now = Date.now();
+  return Math.floor((now - joined) / 86400000)
+});
 </script>
 
 <template>
@@ -50,6 +58,12 @@ const props = defineProps<{
       <p class="text-[14px] md:text-[15px] text-charcoal/85 leading-relaxed font-serif italic tracking-wide">
         "{{ member.quote }}"
       </p>
+      <span
+        v-if="companionDays !== null"
+        class="text-[11px] text-charcoal/30 tracking-wider font-sans mt-0.5"
+      >
+        陪伴了 {{ companionDays }} 天
+      </span>
     </div>
   </div>
 </template>
