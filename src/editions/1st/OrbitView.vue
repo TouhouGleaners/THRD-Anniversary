@@ -12,58 +12,113 @@ const emit = defineEmits<{
   (e: 'select', member: Member): void
 }>();
 
-function generatePosition(existingPositions: {x: number, y: number}[]) {
-  let valid = false;
-  let x = 0;
-  let y = 0;
-  let attempts = 0;
+/** Fisher-Yates: 随机打乱数组元素 */
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
+/** 随机返回 1 或 -1，用于左右方向随机 */
+function randomSign(): number {
+  return Math.random() > 0.5 ? 1 : -1;
+}
+
+// #region 位置生成
+// 为每张浮动卡片找一个不与其他卡片重叠、
+// 且不遮挡中心按钮的位置。三层降级策略：
+//   1. 正常随机（严格间距）
+//   2. 放宽间距（200 次后自动触发）
+//   3. 兜底1：沿中心避让区边缘散布
+//   4. 兜底2：硬放
+
+/** 位置生成参数 */
+const POSITION_CONFIG = {
+  maxAttempts: 400,       // 正常随机的最大尝试次数
+  relaxThreshold: 200,    // 第 N 次后开始放宽间距
+  distX: 300,             // 水平最小间距（卡片宽 288 + 余量）
+  distY: 100,             // 垂直最小间距（卡片高 60 + 余量）
+  distXRelaxed: 250,      // 放宽后的水平间距
+  distYRelaxed: 75,       // 放宽后的垂直间距
+  safeZoneX: 280,         // 中心水平避让半径（按钮 + 缓冲）
+  safeZoneY: 210,         // 中心垂直避让半径（按钮 + 标题 + 缓冲）
+  fallbackSpread: 120,    // 兜底时从避让区边缘向外散布的范围
+  fallbackAttempts: 30,   // 兜底阶段的最大尝试次数
+};
+
+/** 碰撞检测：椭圆形判定横长条形状（约 288×60px）*/
+function hasCollision(
+  x: number, y: number,
+  existing: { x: number; y: number }[],
+  distX: number,
+  distY: number,
+  safeZoneX: number,
+  safeZoneY: number
+): boolean {
+  // 落在中心避让区内
+  if (Math.abs(x) < safeZoneX && Math.abs(y) < safeZoneY) return true;
+  // 与已有卡片的椭圆距离过近
+  return existing.some(pos =>
+    Math.abs(x - pos.x) < distX && Math.abs(y - pos.y) < distY
+  );
+}
+
+/**
+ * 为新卡片生成一个不重叠的位置
+ * @param existing 已放置卡片的位置列表
+ * @returns { x, y } 相对于屏幕中心的偏移量
+ */
+function generatePosition(existing: { x: number; y: number }[]) {
   const screenW = typeof window !== 'undefined' ? window.innerWidth : 1200;
   const screenH = typeof window !== 'undefined' ? window.innerHeight : 800;
 
-  const maxX = (screenW / 2) - 144 - 30;  // 30为安全边缘
-  const maxY = (screenH / 2) - 36 - 100;  // 100为页眉页脚预留
+  // 随机范围: 屏幕中心到边缘，减去卡片自身半宽和安全边距
+  const maxX = (screenW / 2) - 144 - 30;
+  const maxY = (screenH / 2) - 36 - 100;
 
-  const safeZoneX = 280;  // 水平避让: 卡片半径(144) + 按钮半径(112) + 缓冲(20) = 276
-  const safeZoneY = 210;  // 垂直避让: 卡片半径(36) + 按钮半径(112) + 标题高度缓冲(60) = 208
+  const {
+    maxAttempts, relaxThreshold,
+    distX, distY, distXRelaxed, distYRelaxed,
+    safeZoneX, safeZoneY,
+    fallbackSpread, fallbackAttempts
+  } = POSITION_CONFIG;
 
-  while(!valid && attempts < 400) {
-    x = (Math.random() - 0.5) * (maxX * 2);
-    y = (Math.random() - 0.5) * (maxY * 2);
-
-    // 检查中心矩形避让区
-    let overlapsCenter = Math.abs(x) < safeZoneX && Math.abs(y) < safeZoneY;
-
-    // 检查与其他卡片的碰撞
-    let minCardDistX = 320;
-    let minCardDistY = 100;
-
-    // 动态调整间距: 如果多次尝试后仍未满足需求，允许卡片稍微靠拢
-    if (attempts > 200) {
-      minCardDistX = 260;
-      minCardDistY = 80;
+  // 1. 正常随机，前 200 次严格间距，后放宽
+  for (let i = 0; i < maxAttempts; i++) {
+    const x = (Math.random() - 0.5) * maxX * 2;
+    const y = (Math.random() - 0.5) * maxY * 2;
+    const dx = i < relaxThreshold ? distX : distXRelaxed;
+    const dy = i < relaxThreshold ? distY : distYRelaxed;
+    if (!hasCollision(x, y, existing, dx, dy, safeZoneX, safeZoneY)) {
+      return { x, y };
     }
-
-    let overlapsCard = existingPositions.some(pos => {
-      return Math.abs(x - pos.x) < minCardDistX && Math.abs(y - pos.y) < minCardDistY;
-    });
-
-    if (!overlapsCenter && !overlapsCard) {
-       valid = true;
-    }
-    attempts++;
   }
 
-  if (!valid) {
-    x = (Math.random() > 0.5 ? 1 : -1) * (safeZoneX + 10);
-    y = (Math.random() - 0.5) * (maxY * 2);
+  // 2. 沿中心避让区边缘散布 + 一定随机偏移
+  for (let i = 0; i < fallbackAttempts; i++) {
+    const x = randomSign() * (safeZoneX + Math.random() * fallbackSpread);
+    const y = (Math.random() - 0.5) * maxY * 2;
+    if (!hasCollision(x, y, existing, distXRelaxed, distYRelaxed, safeZoneX, safeZoneY)) {
+      return { x, y };
+    }
   }
 
-  return { x, y };
+  // 3. 硬放
+  return {
+    x: randomSign() * (safeZoneX + 10),
+    y: (Math.random() - 0.5) * maxY * 2
+  };
 }
+// #endregion
 
-// Initial cards
-const initialMembers = props.members.slice(0, 8);
+// #region 生成卡片
+// 随机打乱成员列表，取前 10 个作为初始显示
+const initialMembers = shuffle(props.members).slice(0, 10);
+
+// 逐个生成不重叠的位置
 const placedMembers: any[] = [];
 for (let i = 0; i < initialMembers.length; i++) {
   const pos = generatePosition(placedMembers);
@@ -76,21 +131,33 @@ for (let i = 0; i < initialMembers.length; i++) {
 
 const activeMembers = ref(placedMembers);
 
+// #endregion
+
+// #region 定时轮换
+// 每 4 秒随机替换一张卡片，悬停时暂停
+
 let interval: any;
 const isHovered = ref(false);
 
 onMounted(() => {
   interval = setInterval(() => {
+    // 鼠标悬停在卡片上时暂停轮换
     if (isHovered.value) return;
     activeMembers.value = (() => {
-      const remaining = props.members.filter((m: Member) => !activeMembers.value.some((am: any) => am.id === m.id));
+      // 找出还没显示的成员
+      const remaining = props.members.filter(
+        (m: Member) => !activeMembers.value.some((am: any) => am.id === m.id)
+      );
       if (remaining.length === 0) return activeMembers.value;
+
+      // 随机选一个新成员
       const newMember = remaining[Math.floor(Math.random() * remaining.length)];
 
+      // 随机替换一张现有卡片
       const next = [...activeMembers.value];
       const replaceIndex = Math.floor(Math.random() * next.length);
 
-      // Get positions of all OTHER cards so the new one doesn't overlap them
+      // 新位置避开其他卡片 (不包含被替换的那张)
       const otherPositions = next.filter((_, i) => i !== replaceIndex).map((m: any) => ({x: m.x, y: m.y}));
       const newPos = generatePosition(otherPositions);
 
@@ -107,14 +174,11 @@ onMounted(() => {
 onUnmounted(() => {
   clearInterval(interval);
 });
+// #endregion
 </script>
 
 <template>
   <div class="relative min-h-[85vh] w-full flex items-center justify-center overflow-hidden">
-    <!-- Dynamic Background Blurs -->
-    <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-amber/5 rounded-full blur-[120px] -z-10 animate-pulse" />
-    <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-tea-green/5 rounded-full blur-[120px] -z-10 animate-pulse" style="animation-delay: 2s;" />
-
     <!-- Central Interactive Core -->
     <div class="relative z-60 flex flex-col items-center justify-center text-center animate-fade-in-up">
       <h2 class="font-serif italic text-xl md:text-2xl text-tea-green/70 mb-4 tracking-[0.15em]">
