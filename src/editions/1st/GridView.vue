@@ -10,6 +10,9 @@ const emit = defineEmits<{
   (e: 'select', member: Member): void;
 }>();
 
+// 列数切换（仅桌面端）
+const columns = ref<1 | 2>(1);
+
 // ── 时间轴 ──
 
 interface TimelineEntry {
@@ -59,7 +62,7 @@ const groupedTimeline = computed(() => {
 </script>
 
 <template>
-  <div class="max-w-4xl mx-auto w-full px-6 py-12 md:py-20 lg:py-24">
+  <div :class="['mx-auto w-full px-6 py-12 md:py-20 lg:py-24 transition-all duration-500', columns === 1 ? 'max-w-4xl' : 'max-w-6xl']">
     <header class="flex flex-col items-center mb-20 text-center w-full mx-auto">
       <h2
         v-motion
@@ -81,7 +84,24 @@ const groupedTimeline = computed(() => {
     </header>
 
     <!-- 展墙列表 -->
-    <div class="flex flex-col">
+     <!-- 列数切换 -->
+      <div class="hidden md:flex items-center justify-end gap-1 mb-8">
+        <button
+          @click="columns = 1"
+          class="text-xs font-serif tracking-wider transition-all duration-300 px-3 py-1 rounded-full cursor-pointer"
+          :class="columns === 1 ? 'text-parchment bg-tea-green' : 'text-charcoal/30 hover:text-tea-green'"
+        >
+          单列
+        </button>
+        <button
+          @click="columns = 2"
+          class="text-xs font-serif tracking-wider transition-all duration-300 px-3 py-1 rounded-full cursor-pointer"
+          :class="columns === 2 ? 'text-parchment bg-tea-green' : 'text-charcoal/30 hover:text-tea-green'"
+        >
+          双列
+        </button>
+      </div>
+    <div :class="columns === 1 ? 'flex flex-col' : 'grid grid-cols-2 gap-x-6 gap-y-1'">
       <div
         v-for="(member, index) in members"
         :key="member.id"
@@ -103,9 +123,9 @@ const groupedTimeline = computed(() => {
         </div>
 
         <!-- 内容 -->
-        <div class="flex flex-col md:flex-row md:items-center gap-1 md:gap-6 grow min-w-0">
+        <div :class="['flex gap-1 grow min-w-0', columns === 1 ? 'flex-col md:flex-row md:items-center md:gap-6' : 'flex-col gap-0.5']">
           <!-- 称号 + 昵称 -->
-          <div class="flex flex-col gap-0.5 shrink-0 md:w-44">
+          <div :class="['flex flex-col gap-0.5 shrink-0', columns === 1 ? 'md:w-44' : '']">
             <span
               v-if="member.title"
               class="text-[9px] uppercase font-bold tracking-[0.25em] text-charcoal/35"
@@ -118,7 +138,7 @@ const groupedTimeline = computed(() => {
           </div>
 
           <!-- 引言 -->
-          <p class="font-serif italic text-[13px] text-charcoal/50 leading-relaxed tracking-wide group-hover:text-charcoal/70 transition-colors duration-300 grow">
+          <p :class="['font-serif italic text-[13px] text-charcoal/50 leading-relaxed tracking-wide group-hover:text-charcoal/70 transition-colors duration-300 grow', columns === 2 ? 'line-clamp-2' : '']">
             "{{ member.quote }}"
           </p>
         </div>
