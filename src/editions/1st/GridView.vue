@@ -25,7 +25,7 @@ const timeline = ref<TimelineEntry[]>([]);
 
 onMounted(async () => {
   try {
-    const res = await fetch('/editions/1st/timeline.json');
+    const res = await fetch('editions/1st/timeline.json');
     if (res.ok) {
       timeline.value = await res.json();
     }

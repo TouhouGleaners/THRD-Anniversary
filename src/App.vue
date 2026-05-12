@@ -16,7 +16,7 @@ const isLoading = ref(true);
 
 onMounted(async () => {
   try {
-    const res = await fetch(`/editions/1st/members.json`);
+    const res = await fetch(`editions/1st/members.json`);
     if (res.ok) {
       members.value = await res.json();
     } else {
